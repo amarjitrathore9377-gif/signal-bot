@@ -12,7 +12,7 @@ app = Flask(__name__)
 TOKEN = os.environ.get("BOT_TOKEN")
 FREE_CHANNEL = "@kintradingsignal"
 VIP_CHANNEL = "@KINGTRADINGSIGNAL9373"
-ADMIN_ID = "@crowntradingsignalbot"
+ADMIN_ID = "@968613423"
 # ==========================================
 # ==========================================
 
@@ -145,5 +145,6 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
 
