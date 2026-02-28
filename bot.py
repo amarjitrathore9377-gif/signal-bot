@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request
 import requests
 import sqlite3
@@ -8,11 +9,11 @@ import time
 app = Flask(__name__)
 
 # ================= CONFIG =================
-TOKEN = "import os
-TOKEN = os.environ.get("BOT_TOKEN")"
-FREE_CHANNEL = "@your_free_channel"
-VIP_CHANNEL = "@your_vip_channel"
-ADMIN_ID = "YOUR_TELEGRAM_ID"
+TOKEN = os.environ.get("BOT_TOKEN")
+FREE_CHANNEL = "@kintradingsignal"
+VIP_CHANNEL = "@KINGTRADINGSIGNAL9373"
+ADMIN_ID = "@crowntradingsignalbot"
+# ==========================================
 # ==========================================
 
 # -------- DATABASE SETUP --------
@@ -144,4 +145,5 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
