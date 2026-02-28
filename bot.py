@@ -58,6 +58,7 @@ def webhook():
             return "Internal Server Error", 500
 
     return "Bot is running", 200
+message = f"""
 🚨 SIGNAL ALERT
 
 Pair: {pair}
@@ -66,17 +67,19 @@ Entry: {price}
 Risk: 1%
 """
 
-    send_message(FREE_CHANNEL, message)
-    send_message(VIP_CHANNEL, message + "\nVIP Management Active.")
+send_message(FREE_CHANNEL, message)
+send_message(VIP_CHANNEL, message + "\nVIP Management Active.")
 
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
-    c.execute("INSERT INTO trades VALUES (?, ?, ?, ?)",
-              (pair, direction, price, str(datetime.now())))
-    conn.commit()
-    conn.close()
+conn = sqlite3.connect("database.db")
+c = conn.cursor()
+c.execute(
+    "INSERT INTO trades VALUES (?, ?, ?, ?)",
+    (pair, direction, price, str(datetime.now()))
+)
+conn.commit()
+conn.close()
 
-    return "OK"
+return "OK"
 
 # -------- PAYMENT WEBHOOK --------
 @app.route('/payment', methods=['POST'])
@@ -140,6 +143,7 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
 
 
