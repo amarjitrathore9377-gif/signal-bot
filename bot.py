@@ -41,15 +41,23 @@ def send_message(chat_id, text):
     requests.post(url, data={"chat_id": chat_id, "text": text})
 
 # -------- SIGNAL WEBHOOK --------
-@app.route('/signal', methods=['POST'])
-def signal():
-    data = request.json
+@app.route("/", methods=["GET", "POST"])
+def webhook():
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+            print("Incoming update:", data)
 
-    pair = data['pair']
-    direction = data['direction']
-    price = data['price']
+            if data:
+                handle_update(data)
 
-    message = f"""
+            return "OK", 200
+
+        except Exception as e:
+            print("ERROR OCCURRED:", str(e))
+            return "Internal Server Error", 500
+
+    return "Bot is running", 200
 🚨 SIGNAL ALERT
 
 Pair: {pair}
@@ -132,6 +140,7 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
 
 
