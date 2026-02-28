@@ -90,25 +90,12 @@ def payment():
     return "OK"
 
 # -------- USER COMMAND HANDLER --------
-@app.route('/telegram', methods=['POST'])
-def telegram():
-    data = request.json
-
-    if "message" in data:
-        chat_id = data['message']['chat']['id']
-        text = data['message'].get('text', '').lower()
-
-        if "/start" in text:
-            send_message(chat_id, "Welcome to our Signal Service.\nType /price to see VIP plan.")
-
-        elif "/price" in text:
-            send_message(chat_id, "VIP Membership: $5/month.\nVisit our Gumroad link.")
-
-        elif "/help" in text:
-            send_message(chat_id, "Contact admin for support.")
-
+@app.route("/", methods=["POST"])
+def webhook():
+    data = request.get_json()
+    if data:
+        handle_update(data)
     return "OK", 200
-
 
 # -------- AUTO EXPIRY CHECK --------
 def check_expiry():
@@ -145,6 +132,7 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
 
 
