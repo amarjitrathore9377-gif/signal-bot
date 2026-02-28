@@ -12,53 +12,69 @@ app = Flask(__name__)
 TOKEN = os.environ.get("BOT_TOKEN")
 FREE_CHANNEL = "@kintradingsignal"
 VIP_CHANNEL = "@KINGTRADINGSIGNAL9373"
-ADMIN_ID = "@968613423"
+ADMIN_ID = "968613423"  # numeric Telegram ID (not @username)
 # ==========================================
-# ==========================================
+
 
 # -------- DATABASE SETUP --------
 def init_db():
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS users(
-                telegram_id TEXT,
-                expiry TEXT
-                )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS trades(
-                pair TEXT,
-                direction TEXT,
-                entry TEXT,
-                time TEXT
-                )""")
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users(
+            telegram_id TEXT,
+            expiry TEXT
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS trades(
+            pair TEXT,
+            direction TEXT,
+            entry TEXT,
+            time TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
+
 init_db()
+
 
 # -------- TELEGRAM SEND --------
 def send_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": chat_id, "text": text})
+    requests.post(url, data={
+        "chat_id": chat_id,
+        "text": text
+    })
 
-# -------- SIGNAL WEBHOOK --------
-@app.route("/", methods=["GET", "POST"])
-def webhook():
-    if request.method == "POST":
-        try:
-            data = request.get_json()
-            print("Incoming update:", data)
 
-            if data:
-                handle_update(data)
-
-            return "OK", 200
-
-        except Exception as e:
-            print("ERROR OCCURRED:", str(e))
-            return "Internal Server Error", 500
-
+# -------- HOME ROUTE (Health Check) --------
+@app.route("/", methods=["GET"])
+def home():
     return "Bot is running", 200
-message = f"""
+
+
+# -------- SIGNAL ROUTE --------
+@app.route("/signal", methods=["POST"])
+def signal():
+    data = request.json
+
+    if not data:
+        return "No JSON received", 400
+
+    pair = data.get("pair")
+    direction = data.get("direction")
+    price = data.get("price")
+
+    if not pair or not direction or not price:
+        return "Missing data", 400
+
+    message = f"""
 🚨 SIGNAL ALERT
 
 Pair: {pair}
@@ -67,46 +83,45 @@ Entry: {price}
 Risk: 1%
 """
 
-send_message(FREE_CHANNEL, message)
-send_message(VIP_CHANNEL, message + "\nVIP Management Active.")
+    send_message(FREE_CHANNEL, message)
+    send_message(VIP_CHANNEL, message + "\nVIP Management Active.")
 
-conn = sqlite3.connect("database.db")
-c = conn.cursor()
-c.execute(
-    "INSERT INTO trades VALUES (?, ?, ?, ?)",
-    (pair, direction, price, str(datetime.now()))
-)
-conn.commit()
-conn.close()
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO trades VALUES (?, ?, ?, ?)",
+        (pair, direction, price, str(datetime.now()))
+    )
+    conn.commit()
+    conn.close()
 
-              return "OK"
+    return "OK", 200
+
 
 # -------- PAYMENT WEBHOOK --------
-@app.route('/payment', methods=['POST'])
+@app.route("/payment", methods=["POST"])
 def payment():
     data = request.json
 
-    telegram_id = data['custom_fields']['telegram_id']
+    if not data:
+        return "No JSON received", 400
+
+    telegram_id = data["custom_fields"]["telegram_id"]
     expiry = datetime.now() + timedelta(days=30)
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
-    c.execute("INSERT INTO users VALUES (?, ?)",
-              (telegram_id, expiry.isoformat()))
+    c.execute(
+        "INSERT INTO users VALUES (?, ?)",
+        (telegram_id, expiry.isoformat())
+    )
     conn.commit()
     conn.close()
 
     send_message(telegram_id, "✅ VIP Activated for 30 Days.")
 
-    return "OK"
-
-# -------- USER COMMAND HANDLER --------
-@app.route("/", methods=["POST"])
-def webhook():
-    data = request.get_json()
-    if data:
-        handle_update(data)
     return "OK", 200
+
 
 # -------- AUTO EXPIRY CHECK --------
 def check_expiry():
@@ -118,35 +133,42 @@ def check_expiry():
 
         for user in users:
             if datetime.now() > datetime.fromisoformat(user[1]):
-                requests.post(f"https://api.telegram.org/bot{TOKEN}/banChatMember",
-                              data={"chat_id": VIP_CHANNEL,
-                                    "user_id": user[0]})
-                c.execute("DELETE FROM users WHERE telegram_id=?", (user[0],))
+                requests.post(
+                    f"https://api.telegram.org/bot{TOKEN}/banChatMember",
+                    data={
+                        "chat_id": VIP_CHANNEL,
+                        "user_id": user[0]
+                    }
+                )
+                c.execute(
+                    "DELETE FROM users WHERE telegram_id=?",
+                    (user[0],)
+                )
 
         conn.commit()
         conn.close()
 
-        time.sleep(86400)
+        time.sleep(86400)  # check once per day
+
 
 threading.Thread(target=check_expiry, daemon=True).start()
+
 
 # -------- WEEKLY REPORT --------
 def weekly_report():
     while True:
-        time.sleep(604800)
+        time.sleep(604800)  # 7 days
+
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
         c.execute("SELECT COUNT(*) FROM trades")
         total = c.fetchone()[0]
         conn.close()
 
-        send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
+        send_message(
+            VIP_CHANNEL,
+            f"📊 Weekly Report\nTotal Signals Sent: {total}"
+        )
+
 
 threading.Thread(target=weekly_report, daemon=True).start()
-
-
-
-
-
-
-
