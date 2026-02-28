@@ -8,7 +8,8 @@ import time
 app = Flask(__name__)
 
 # ================= CONFIG =================
-TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TOKEN = "import os
+TOKEN = os.environ.get("BOT_TOKEN")"
 FREE_CHANNEL = "@your_free_channel"
 VIP_CHANNEL = "@your_vip_channel"
 ADMIN_ID = "YOUR_TELEGRAM_ID"
@@ -94,7 +95,7 @@ def telegram():
 
     if "message" in data:
         chat_id = data['message']['chat']['id']
-        text = data['message']['text'].lower()
+        text = data['message'].get('text', '').lower()
 
         if "/start" in text:
             send_message(chat_id, "Welcome to our Signal Service.\nType /price to see VIP plan.")
@@ -105,7 +106,8 @@ def telegram():
         elif "/help" in text:
             send_message(chat_id, "Contact admin for support.")
 
-    return "OK"
+    return "OK", 200
+
 
 # -------- AUTO EXPIRY CHECK --------
 def check_expiry():
@@ -127,7 +129,7 @@ def check_expiry():
 
         time.sleep(86400)
 
-threading.Thread(target=check_expiry).start()
+threading.Thread(target=check_expiry, daemon=True).start()
 
 # -------- WEEKLY REPORT --------
 def weekly_report():
@@ -141,6 +143,5 @@ def weekly_report():
 
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
-threading.Thread(target=weekly_report).start()
+threading.Thread(target=weekly_report, daemon=True).start()
 
-app.run(host="0.0.0.0", port=5000)
