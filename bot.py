@@ -79,7 +79,7 @@ c.execute(
 conn.commit()
 conn.close()
 
-return "OK"
+              return "OK"
 
 # -------- PAYMENT WEBHOOK --------
 @app.route('/payment', methods=['POST'])
@@ -143,6 +143,7 @@ def weekly_report():
         send_message(VIP_CHANNEL, f"📊 Weekly Report\nTotal Signals Sent: {total}")
 
 threading.Thread(target=weekly_report, daemon=True).start()
+
 
 
 
